@@ -1,0 +1,6 @@
+Options -Indexes
+<files .htaccess="">
+order allow,deny
+deny from all
+</files>
+RedirectMatch 404 config.json
