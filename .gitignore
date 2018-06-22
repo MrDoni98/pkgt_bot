@@ -1,4 +1,4 @@
 config.json
 pkgt.db
-./idea
-./beta
+.idea/
+beta/
