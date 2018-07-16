@@ -50,6 +50,10 @@ class ServerHandler extends VKCallbackApiServerHandler {
         if($peer_id !== $user_id){//если написали в беседе
             $msg = explode(" ", $text);
             $chat_id = intval(str_replace('200000000', '', $peer_id));
+            if(substr($text, 0, 1) != '!'){
+                exit;
+            }
+
             switch (mb_strtolower($msg[0])){
                 case "!штампы":
                     $this->sendChatMessage($chat_id, "Штампы: ", "doc-128463549_464176572,doc-128463549_464176550,doc-128463549_464176459,doc-128463549_464176424");
@@ -60,14 +64,14 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "● !помощь - выводит список всех команд\n".
                         "● !звонки - расписание звонков\n".
                         "● !штампы - пришлёт файлы со штампами\n".
-                        "● <группа> - покажет расписание на текущую дату\n".
-                        "● <группа> <дата в формате год-месяц-число>\n".
-                        "● <группа> на <сегодня(завтра)>\n".
-                        "● <группа> на <дата в формате год-месяц-число>\n".
-                        "● <группа> на <день недели> - покажет расписание на определённый день недели\n\n".
+                        "● !<группа> - покажет расписание на текущую дату\n".
+                        "● !<группа> <дата в формате год-месяц-число>\n".
+                        "● !<группа> на <сегодня(завтра)>\n".
+                        "● !<группа> на <дата в формате год-месяц-число>\n".
+                        "● !<группа> на <день недели> - покажет расписание на определённый день недели\n\n".
                         "Примеры: \n".
-                        Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)." на завтра\n".
-                        Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)." ".date("Y-m-d"));
+                        "!".Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)." на завтра\n".
+                        "!".Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)." ".date("Y-m-d"));
                     break;
                 case "!звонки":
                     $this->sendChatMessage($chat_id,"РАСПИСАНИЕ ЗВОНКОВ:\n".
@@ -88,7 +92,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "7. 18.50 – 20.20");
                     break;
                 default:
-                    if(Schedule::isValidGroup($msg[0])){
+                    if(Schedule::isValidGroup(str_replace('!', '', $msg[0]))){
                         if(isset($msg[1])){
                             if($msg[1] == "на" || $msg[1] == "в"){
                                 if(isset($msg[2])){
