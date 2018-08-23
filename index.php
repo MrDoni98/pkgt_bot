@@ -4,7 +4,7 @@
  * ПКЖТ Бот
  * Разработал MrDoni98(vk.com/mrdoni98) специально для pkgt.kz
  * При поддержке Ethicist(vk.com/ethicist)
- * Версия: 4.0.0
+ * Версия: 4.1.0
  */
 
 include('simple_html_dom.php');
@@ -44,7 +44,7 @@ define('API_VERSION', $config->api_version);
 try {
     $db = new \mysqli($config->host, $config->username, $config->passwd, $config->dbname, $config->port);
     $db->set_charset("utf8");
-    $db->query("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY NOT NULL, `group` TEXT, `window` INT(1));");
+    $db->query("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY NOT NULL, `group` TEXT, `window` INT(1), `keyboard` VARCHAR(0));");
     //$db->exec('PRAGMA journal_mode=WAL;');
 } catch (\Exception $e) {
     echo($e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());

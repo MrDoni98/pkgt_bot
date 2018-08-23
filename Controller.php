@@ -79,28 +79,39 @@ class Controller
         self::$db->query("UPDATE users SET `window` = '".$window."' WHERE id = '".$user_id."';");
     }
 
-    public function getWindowText(int $window): string {
+    public function getWindowText(int $window, bool $keyboard = false): string {
         $result = "";
         switch ($window){
             case Schedule::MAIN:
-                $result = "1 - Расписание занятий\n".
-                    "2 - Расписание звонков\n".
-                    "3 - Штампы колледжа\n".
-                    "4 - Миссия колледжа\n".
-                    "5 - Видение колледжа\n".
-                    "6 - Показать клавиатуру\n\n".
+                if($keyboard){
+                    $result = "Главное меню\n\n".
+                    "6 - Вернуться в текстовый режим";
+                }else{
+                    $result = "1 - Расписание занятий\n".
+                        "2 - Расписание звонков\n".
+                        "3 - Штампы колледжа\n".
+                        "4 - Миссия колледжа\n".
+                        "5 - Видение колледжа\n\n".
+                        "6 - Режим клавиатуры\n\n".
 
-                    "Сайт колледжа: http://pkgt.kz";
+                        "Сайт колледжа: http://pkgt.kz";
+                }
                 break;
             case Schedule::SCHEDULE:
-                $result = "Текущая группа - {group} \n".
-                    "1 - Пары на сегодня \n".
-                    "2 - Пары на завтра\n".
-                    "3 - Пары на определённую дату\n".
-                    "4 - Вывести текущую дату\n".
-                    "5 - Сменить группу\n\n".
+                if($keyboard){
+                    $result = "Текущая группа - {group} \n\n".
 
-                    "0 - Вернуться в главное меню";
+                        "0 - Вернуться в главное меню";
+                }else{
+                    $result = "Текущая группа - {group} \n".
+                        "1 - Пары на сегодня \n".
+                        "2 - Пары на завтра\n".
+                        "3 - Пары на определённую дату\n".
+                        "4 - Вывести текущую дату\n".
+                        "5 - Сменить группу\n\n".
+
+                        "0 - Вернуться в главное меню";
+                }
                 break;
             case Schedule::SCHEDULE_DATE:
                 $result = "Укажите дату в формате год-месяц-число\n".
@@ -125,35 +136,35 @@ class Controller
             case Schedule::MAIN:
                 return ['one_time'=> false,
                     'buttons' => [
-                        [$this->getButton('Пары', 'primary','{"command":"schedule"}')],
-                        [$this->getButton('Звонки', 'default','{"command":"calls"}')],
-                        [$this->getButton('Штампы', 'default','{"command":"stamps"}')],
-                        [$this->getButton('Миссия', 'default', '{"command":"mission"}')],
-                        [$this->getButton('Видение', 'default', '{"command":"conducting"}')],
-                        [$this->getButton('Спрятать клавиатуру', 'negative', '{"command":"hide_keyboard"}')]
+                        [$this->getButton("\xF0\x9F\x93\x96Пары", 'primary','{"command":"schedule"}')],
+                        [$this->getButton("\xE2\x8F\xB0Звонки", 'default', '{"command":"calls"}'),
+                            $this->getButton("\xF0\x9F\x93\x84Штампы", 'default', '{"command":"stamps"}')],
+                        [$this->getButton("\xF0\x9F\x92\xA1Миссия", 'default', '{"command":"mission"}'),
+                            $this->getButton("\xF0\x9F\x92\xA5Видение", 'default', '{"command":"conducting"}')],
+                        [$this->getButton("\xF0\x9F\x93\xB4Спрятать клавиатуру", 'negative', '{"command":"hide_keyboard"}')]
                     ]];
                 break;
             case Schedule::SCHEDULE:
                 return ['one_time'=> false,
                     'buttons' => [
-                        [$this->getButton('Сегодня', 'default', '{"command":"today"}')],
-                        [$this->getButton('Завтра', 'default', '{"command":"tomorrow"}')],
-                        [$this->getButton('По дате', 'default', '{"command":"by_date"}')],
-                        [$this->getButton('Текущая дата', 'default', '{"command":"current_date"}')],
-                        [$this->getButton('Сменить группу', 'default', '{"command":"change_group"}')],
-                        [$this->getButton('Назад', 'negative', '{"command":"back"}')]
+                        [$this->getButton("\xF0\x9F\x95\x92Сегодня", 'default', '{"command":"today"}'),
+                            $this->getButton("\xF0\x9F\x95\x93Завтра", 'default', '{"command":"tomorrow"}')],
+                        [$this->getButton("\xF0\x9F\x93\x85По дате", 'default', '{"command":"by_date"}'),
+                            $this->getButton("\xF0\x9F\x93\x86Текущая дата", 'default', '{"command":"current_date"}')],
+                        [$this->getButton("\xE2\x9C\x8FСменить группу", 'primary', '{"command":"change_group"}')],
+                        [$this->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', '{"command":"back"}')]
                     ]];
                 break;
             case Schedule::SCHEDULE_DATE:
                 return ['one_time'=> true,
                     'buttons' => [
-                        [$this->getButton('Назад', 'negative', '{"command":"back"}')]
+                        [$this->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', '{"command":"back"}')]
                     ]];
                 break;
             case Schedule::SCHEDULE_GROUP:
                 return ['one_time'=> true,
                     'buttons' => [
-                        [$this->getButton('Назад', 'negative', '{"command":"back"}')]
+                        [$this->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', '{"command":"back"}')]
                     ]];
                 break;
             default:
@@ -171,6 +182,30 @@ class Controller
             ],
             'color' => $color
         ];
+    }
+
+    public function isKeyboardEnabled($user_id): bool{
+        $result = self::$db->query("SELECT * FROM `users` WHERE id = '".$user_id."'");
+        if($result){
+            if(!empty(($enabled = $result->fetch_assoc()['keyboard']))){
+                $result->free();
+                return (bool) $enabled;
+            }else{
+                $this->setKeyboardEnabled($user_id, false);
+                $result->free();
+                return false;
+            }
+        }else{
+            return false;
+        }
+    }
+
+    public function setKeyboardEnabled($user_id, bool $enabled = true){
+        if($enabled){
+            self::$db->query("UPDATE users SET `keyboard` = 1 WHERE id = '".$user_id."';");
+        }else{
+            self::$db->query("UPDATE users SET `keyboard` = '0' WHERE id = '".$user_id."';");
+        }
     }
 
 }
