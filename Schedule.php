@@ -21,15 +21,22 @@ class Schedule
         self::$groups = $groups;
     }
 
-    public static function isValidGroup(String $group){
+    public static function isValidGroup(string $group){
         $group = mb_strtoupper($group);
         if(preg_match("/[А-Я]{1,4}\-[1-4][1-4]/", $group)){
             $g = explode("-", $group);
-            if(in_array(mb_strtoupper($g[0]), self::$groups)){
+            if(in_array($g[0], self::$groups)){
                 return true;
             }
         }
         return false;
+    }
+
+    public function isGroupExists(string $group){
+        $group = mb_strtoupper($group);
+        if(in_array($group, self::$groups)){
+            return true;
+        }
     }
 
     public static function getDate(String $string){

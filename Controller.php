@@ -54,8 +54,9 @@ class Controller
             if(!empty(($window = $result->fetch_assoc()["window"]))){
                 $result->free();
                 return $window;
-            }else{
-                $this->setWindow($user_id, 0);
+            }else{//пользователь не зарегестрирован
+                $stmt = self::$db->query("INSERT INTO users (`id`, `window`, `group`, `keyboard`) VALUES (".$user_id.", 0, NULL, 0);");
+                //$this->setWindow($user_id, 0);
                 $result->free();
                 return 0;
             }

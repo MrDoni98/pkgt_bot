@@ -37,10 +37,10 @@ class ServerHandler extends VKCallbackApiServerHandler {
         $vk = new VKApiClient('5.80');
         $messages = $vk->messages();
 
-        $messages->markAsRead(ACCESS_TOKEN, [
+        /*$messages->markAsRead(ACCESS_TOKEN, [
             'peer_id' => $user_id,
             'start_message_id' => $object['id']
-        ]);
+        ]);*/
         $status = json_decode(file_get_contents("https://api.vk.com/method/groups.getOnlineStatus?group_id=128463549&access_token=".ACCESS_TOKEN."&v=".API_VERSION.""));
         if($status->response->status != "online"){
             json_decode(file_get_contents("https://api.vk.com/method/groups.enableOnline?group_id=128463549&access_token=".ACCESS_TOKEN."&v=".API_VERSION.""));
@@ -103,7 +103,8 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "7. 18.50 – 20.20");
                     break;
                 default:
-                    if(Schedule::isValidGroup(str_replace('/', '', $msg[0]))){
+                    $msg[0] = str_replace('/', '', $msg[0]);
+                    if(Schedule::isValidGroup($msg[0])){
                         if(isset($msg[1])){
                             if($msg[1] == "на" || $msg[1] == "в"){
                                 if(isset($msg[2])){
@@ -389,7 +390,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE_DATE)));
                     }
                     break;
-                case Schedule::SCHEDULE_GROUP:
+                case Schedule::SCHEDULE_GROUP://установка группы
                     if($text === "0"){
                         $controller->setWindow($user_id, Schedule::MAIN);
                         $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN));
