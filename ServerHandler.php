@@ -29,6 +29,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
         echo 'ok';
         $user_id = $object['from_id'];
         $peer_id = $object['peer_id'];
+
         if(!in_array($user_id, [244448617, 284995241])){
             //echo 'ok';
             //exit;
@@ -37,10 +38,10 @@ class ServerHandler extends VKCallbackApiServerHandler {
         $vk = new VKApiClient('5.80');
         $messages = $vk->messages();
 
-        /*$messages->markAsRead(ACCESS_TOKEN, [
-            'peer_id' => $user_id,
-            'start_message_id' => $object['id']
-        ]);*/
+        $user_name = $vk->users()->get(ACCESS_TOKEN, [
+            'user_ids' => $user_id
+        ])[0]['first_name'];
+
         $status = json_decode(file_get_contents("https://api.vk.com/method/groups.getOnlineStatus?group_id=128463549&access_token=".ACCESS_TOKEN."&v=".API_VERSION.""));
         if($status->response->status != "online"){
             json_decode(file_get_contents("https://api.vk.com/method/groups.enableOnline?group_id=128463549&access_token=".ACCESS_TOKEN."&v=".API_VERSION.""));
@@ -64,14 +65,14 @@ class ServerHandler extends VKCallbackApiServerHandler {
             if(substr($text, 0, 1) != '/'){
                 exit;
             }
-
+            $appeal = "@id".$user_id."(".$user_name."), ";
             switch (mb_strtolower($msg[0])){
                 case "/штампы":
                     $this->sendChatMessage($chat_id, "Штампы: ", "doc-128463549_464176572,doc-128463549_464176550,doc-128463549_464176459,doc-128463549_464176424");
                     break;
                 case "/помощь":
                 case "/команды":
-                    $this->sendChatMessage($chat_id, "Доступные команды:\n".
+                    $this->sendChatMessage($chat_id, $appeal."Доступные команды:\n".
                         "● /помощь - выводит список всех команд\n".
                         "● /звонки - расписание звонков\n".
                         "● /штампы - пришлёт файлы со штампами\n".
@@ -85,7 +86,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "/".Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)." ".date("Y-m-d"));
                     break;
                 case "/звонки":
-                    $this->sendChatMessage($chat_id,"РАСПИСАНИЕ ЗВОНКОВ:\n".
+                    $this->sendChatMessage($chat_id,$appeal."РАСПИСАНИЕ ЗВОНКОВ:\n".
                         "1. 08.30 – 10.00 | 10\n".
                         "2. 10.10 – 11.40 | 30\n".
                         "3. 12.10 – 13.40 | 10\n".
@@ -111,23 +112,23 @@ class ServerHandler extends VKCallbackApiServerHandler {
                                     $string = $msg;
                                     unset($string[0], $string[1]);
                                     if (($date = Schedule::getDate(implode(" ", $string))) !== false) {
-                                        $this->sendChatMessage($chat_id, Schedule::getSchedule($msg[0], $date));
+                                        $this->sendChatMessage($chat_id, $appeal.Schedule::getSchedule($msg[0], $date));
                                     }else{
-                                        $this->sendChatMessage($chat_id, "Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
+                                        $this->sendChatMessage($chat_id, $appeal."Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
                                     }
                                 }else{
-                                    $this->sendChatMessage($chat_id, "Пожалуйства укажите на какой день вам нужно узнать расписание занятий");
+                                    $this->sendChatMessage($chat_id, $appeal."Пожалуйства укажите на какой день вам нужно узнать расписание занятий");
                                     return;
                                 }
                             }else{
                                 if (($date = Schedule::getDate($msg[1]))) {
-                                    $this->sendChatMessage($chat_id, Schedule::getSchedule($msg[0], $date));
+                                    $this->sendChatMessage($chat_id, $appeal.Schedule::getSchedule($msg[0], $date));
                                 }else{
-                                    $this->sendChatMessage($chat_id, "Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
+                                    $this->sendChatMessage($chat_id, $appeal."Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
                                 }
                             }
                         }else{
-                            $this->sendChatMessage($chat_id, Schedule::getSchedule($msg[0], date("Y-m-d")));
+                            $this->sendChatMessage($chat_id, $appeal.Schedule::getSchedule($msg[0], date("Y-m-d")));
                         }
                     }
                     break;
