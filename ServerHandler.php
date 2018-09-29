@@ -133,6 +133,12 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     break;
             }
             exit;
+        }else{
+            //В беседе боту неизвестен айди чата, поэтому сработает только в личных сообщениях
+            $messages->markAsRead(ACCESS_TOKEN, [
+                'peer_id' => $user_id,
+                'start_message_id' => $object['id']
+            ]);
         }
 
         $controller = $this->controller;
@@ -140,8 +146,11 @@ class ServerHandler extends VKCallbackApiServerHandler {
         if(isset($object['payload'])){//если пользователь нажал на кнопку
             $payload = json_decode($object['payload'], true);
             switch ($payload){
-                case '{"command":"start"}':
+                case ["command" => "start"]:
+                    $controller->setWindow($user_id, Schedule::MAIN);
                     $controller->setKeyboardEnabled($user_id, true);
+                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $controller->isKeyboardEnabled($user_id)));
+                    break;
                 case '{"command":"back"}':
                     $controller->setWindow($user_id, Schedule::MAIN);
                     $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $controller->isKeyboardEnabled($user_id)));
