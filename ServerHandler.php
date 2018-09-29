@@ -68,7 +68,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
             $appeal = "@id".$user_id."(".$user_name."), ";
             switch (mb_strtolower($msg[0])){
                 case "/штампы":
-                    $this->sendChatMessage($chat_id, "Штампы: ", "doc-128463549_464176572,doc-128463549_464176550,doc-128463549_464176459,doc-128463549_464176424");
+                    $this->sendChatMessage($chat_id, $appeal."Штампы: ", "doc-128463549_464176572,doc-128463549_464176550,doc-128463549_464176459,doc-128463549_464176424");
                     break;
                 case "/помощь":
                 case "/команды":
