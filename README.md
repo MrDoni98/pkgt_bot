@@ -1,2 +1,3 @@
 # pkgt_bot
-Бот для сайта pkgt.kz
+VK-Бот для сайта pkgt.kz\
+https://vk.com/pkgt_bot
