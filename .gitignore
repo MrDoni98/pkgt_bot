@@ -1,4 +1,7 @@
 config.json
 pkgt.db
+composer.phar
+composer.lock
+vendor/
 .idea/
 beta/

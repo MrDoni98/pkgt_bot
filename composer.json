@@ -1,0 +1,10 @@
+{
+  "name": "mrdoni98/pkgt-bot",
+  "description": "VK Бот для колледжа ПКЖТ pkgt.kz",
+  "type": "project",
+  "homepage": "https://github.com/MrDoni98/pkgt_bot",
+  "license": "GPL-3.0-or-later",
+  "require": {
+    "vkcom/vk-php-sdk": "^5.80"
+  }
+}
