@@ -50,7 +50,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
         $text = $object['text'];//текст сообщения
         if($peer_id !== $user_id){//если написали в беседе
             $msg = explode(" ", $text);
-            $chat_id = intval(str_replace('200000000', '', $peer_id));
+            $chat_id = $peer_id - 2000000000;
             if(isset($object['action'])){
                 $action = $object['action'];
                 if($action->type == "chat_invite_user" && $action->member_id == -128463549){
