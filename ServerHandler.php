@@ -143,6 +143,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
         }
 
         $controller = $this->controller;
+        $keyboard = $controller->isKeyboardEnabled($user_id);
 
         if(isset($object['payload'])){//если пользователь нажал на кнопку
             $payload = json_decode($object['payload'], true);
@@ -150,11 +151,11 @@ class ServerHandler extends VKCallbackApiServerHandler {
                 case ["command" => "start"]:
                     $controller->setWindow($user_id, Schedule::MAIN);
                     $controller->setKeyboardEnabled($user_id, true);
-                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $controller->isKeyboardEnabled($user_id)));
+                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $keyboard));
                     break;
                 case '{"command":"back"}':
                     $controller->setWindow($user_id, Schedule::MAIN);
-                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $controller->isKeyboardEnabled($user_id)));
+                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $keyboard));
                     break;
                 case '{"command":"schedule"}':
                     if(!is_null($group = $controller->getGroup($user_id))){//если пользователь установил группу
@@ -324,9 +325,9 @@ class ServerHandler extends VKCallbackApiServerHandler {
                                 $controller->getWindowText(Schedule::MAIN));
                             break;
                         case "6":
-                            if($keyboard = $controller->isKeyboardEnabled($user_id)){//Спрятать клавиатуру
+                            if($keyboard = $controller->isKeyboardEnabled($user_id)){//Текстовый режим
                                 $controller->setKeyboardEnabled($user_id, false);
-                            }else{//Показать клавиатуру
+                            }else{//Клвиатурный режим
                                 $controller->setKeyboardEnabled($user_id, true);
                             }
                             $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, !$keyboard));
@@ -409,11 +410,11 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     if (Schedule::isValidGroup($text)){
                         $controller->setGroup($user_id, $text);
                         $controller->setWindow($user_id, Schedule::SCHEDULE);
-                        $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE)));
+                        $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE, $keyboard)));
                     }else{
                         $this->sendMessage($user_id,
                             "> Неверно указана группа\n\n".
-                            $controller->getWindowText(Schedule::SCHEDULE_GROUP));
+                            $controller->getWindowText(Schedule::SCHEDULE_GROUP, $keyboard));
                     }
                     break;
             }

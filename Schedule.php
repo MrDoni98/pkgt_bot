@@ -112,17 +112,18 @@ class Schedule
                     $tds[] = $td->plaintext;
                 }
                 unset($tds[0], $tds[2]);//удаляем из таблицы дату и группу, их мы укажем отдельно
-                $tds[1] .= ")";//номер пары
-                $tds[3] .= ".";//название пары
+                $tds[1] .= ". ";//номер пары
+                $tds[3] = mb_strtoupper(mb_substr($tds[3], 0, 1)).mb_substr($tds[3], 1);
+                ///$tds[3] = mb_convert_case($tds[3], MB_CASE_TITLE, "UTF-8").".";//название пары
                 if($tds[4] != ""){//у физ-ры не указывается кабинет поэтому он может быть null
                     $tds[4] = "(".$tds[4]." каб.)";//кабинет
                 }
                 $ans[] = implode(" ", $tds);//Объеденеям в одну строку
             }
             if(count($ans) == 0){
-                $answer = "Расписание на ".$date." мне пока неизвестно...";
+                $answer = "Расписание на ".$date." мне пока неизвестно...".PHP_EOL;
             }else{
-                $answer = "Расписание ".$group." на ".$date." ".PHP_EOL;
+                $answer = "Расписание ".$group." на ".$date." ".PHP_EOL.PHP_EOL;
                 $answer .= implode(PHP_EOL, $ans);
             }
 
@@ -135,7 +136,7 @@ class Schedule
             $get_params = http_build_query($request_params);
             $url = json_decode(file_get_contents('https://api.vk.com/method/utils.getShortLink?'. $get_params))->response->short_url;
 
-            $answer .= "\nМожешь проверить на сайте: \n".$url;
+            $answer .= "\n\nМожешь проверить на сайте: \n".$url;
             return $answer;
         }
         $answer = "Проблемы с доступом к сайту...";

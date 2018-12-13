@@ -86,7 +86,8 @@ class Controller
             case Schedule::MAIN:
                 if($keyboard){
                     $result = "Главное меню\n\n".
-                    "6 - Вернуться в текстовый режим";
+
+                        "6 - Вернуться в текстовый режим";
                 }else{
                     $result = "1 - Расписание занятий\n".
                         "2 - Расписание звонков\n".
@@ -142,7 +143,7 @@ class Controller
                             $this->getButton("\xF0\x9F\x93\x84Штампы", 'default', '{"command":"stamps"}')],
                         [$this->getButton("\xF0\x9F\x92\xA1Миссия", 'default', '{"command":"mission"}'),
                             $this->getButton("\xF0\x9F\x92\xA5Видение", 'default', '{"command":"conducting"}')],
-                        [$this->getButton("\xF0\x9F\x93\xB4Спрятать клавиатуру", 'negative', '{"command":"hide_keyboard"}')]
+                        [$this->getButton("\xF0\x9F\x93\xB4Текстовый режим", 'negative', '{"command":"hide_keyboard"}')]
                     ]];
                 break;
             case Schedule::SCHEDULE:
