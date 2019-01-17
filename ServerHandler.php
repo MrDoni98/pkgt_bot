@@ -30,8 +30,8 @@ class ServerHandler extends VKCallbackApiServerHandler {
         $user_id = $object['from_id'];
         $peer_id = $object['peer_id'];
 
-        if(!in_array($user_id, [244448617, 284995241])){
-            //echo 'ok';
+        if(in_array($user_id, [244448617, 284995241])){
+
             //exit;
         }
 

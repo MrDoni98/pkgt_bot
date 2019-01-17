@@ -114,16 +114,26 @@ class Schedule
                 unset($tds[0], $tds[2]);//удаляем из таблицы дату и группу, их мы укажем отдельно
                 $tds[1] .= ". ";//номер пары
                 $tds[3] = mb_strtoupper(mb_substr($tds[3], 0, 1)).mb_substr($tds[3], 1);
-                ///$tds[3] = mb_convert_case($tds[3], MB_CASE_TITLE, "UTF-8").".";//название пары
+//название пары
                 if($tds[4] != ""){//у физ-ры не указывается кабинет поэтому он может быть null
-                    $tds[4] = "(".$tds[4]." каб.)";//кабинет
+                    $cabinet = intval($tds[4]);
+                    $tds[4] = "(".$tds[4]." каб. ";//кабинет
+                    if($cabinet >= 21 and $cabinet <= 47){
+                        $tds[4] = $tds[4]."1 корпус)";
+                    }elseif ($cabinet >= 50 and $cabinet <= 64) {
+                        $tds[4] = $tds[4]."2 корпус)";
+                    }elseif ($cabinet >= 65 and $cabinet <= 80){
+                        $tds[4] = $tds[4]."3 корпус)";
+                    }else{
+                        $tds[4] = $tds[4].")";
+                    }
                 }
                 $ans[] = implode(" ", $tds);//Объеденеям в одну строку
             }
             if(count($ans) == 0){
                 $answer = "Расписание на ".$date." мне пока неизвестно...".PHP_EOL;
             }else{
-                $answer = "Расписание ".$group." на ".$date." ".PHP_EOL.PHP_EOL;
+                $answer = "Расписание ".$group." на ".$date.". ".PHP_EOL.PHP_EOL;
                 $answer .= implode(PHP_EOL, $ans);
             }
 
