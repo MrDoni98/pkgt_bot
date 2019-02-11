@@ -1,4 +1,5 @@
 config.json
+weather.json
 pkgt.db
 composer.phar
 composer.lock
