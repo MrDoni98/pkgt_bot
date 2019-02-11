@@ -37,6 +37,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
 
         $vk = new VKApiClient('5.80');
         $messages = $vk->messages();
+        $controller = $this->controller;
 
         $user_name = $vk->users()->get(ACCESS_TOKEN, [
             'user_ids' => $user_id
@@ -76,6 +77,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "● /помощь - выводит список всех команд\n".
                         "● /звонки - расписание звонков\n".
                         "● /штампы - пришлёт файлы со штампами\n".
+                        "● /погода\n".
                         "● /<группа> - покажет расписание на текущую дату\n".
                         "● /<группа> <дата в формате год-месяц-число>\n".
                         "● /<группа> на <сегодня(завтра)>\n".
@@ -84,6 +86,9 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "Примеры: \n".
                         "/".Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)." на завтра\n".
                         "/".Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)." ".date("Y-m-d"));
+                    break;
+                case "/погода":
+                    $this->sendChatMessage($chat_id, $appeal.$controller->getWeather());
                     break;
                 case "/звонки":
                     $this->sendChatMessage($chat_id,$appeal."РАСПИСАНИЕ ЗВОНКОВ:\n".
@@ -142,22 +147,21 @@ class ServerHandler extends VKCallbackApiServerHandler {
             ]);
         }
 
-        $controller = $this->controller;
         $keyboard = $controller->isKeyboardEnabled($user_id);
 
         if(isset($object['payload'])){//если пользователь нажал на кнопку
             $payload = json_decode($object['payload'], true);
-            switch ($payload){
-                case ["command" => "start"]:
+            switch ($payload['command']?? ''){
+                case 'start':
                     $controller->setWindow($user_id, Schedule::MAIN);
                     $controller->setKeyboardEnabled($user_id, true);
                     $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $keyboard));
                     break;
-                case '{"command":"back"}':
+                case 'back':
                     $controller->setWindow($user_id, Schedule::MAIN);
                     $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $keyboard));
                     break;
-                case '{"command":"schedule"}':
+                case 'schedule':
                     if(!is_null($group = $controller->getGroup($user_id))){//если пользователь установил группу
                         $controller->setWindow($user_id, Schedule::SCHEDULE);
                         $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE, true)));
@@ -166,7 +170,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE_GROUP, true)));
                     }
                     break;
-                case '{"command":"calls"}':
+                case 'calls':
                     $this->sendMessage($user_id, "РАСПИСАНИЕ ЗВОНКОВ:\n".
                         "1. 08.30 – 10.00 | 10\n".
                         "2. 10.10 – 11.40 | 30\n".
@@ -184,36 +188,40 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "6. 17.00 – 18.30 | 20\n".
                         "7. 18.50 – 20.20 \n\n".
 
-                        "6 - Вернуться в текстовый режим"
+                        "* - Вернуться в текстовый режим"
                     );
                     break;
-                case '{"command":"stamps"}':
+                case 'stamps':
                     $this->sendMessage($user_id,
                         "Штампы: \n\n".
 
-                        "6 - Вернуться в текстовый режим",
+                        "* - Вернуться в текстовый режим",
                         "doc-128463549_464176572,doc-128463549_464176550,doc-128463549_464176459,doc-128463549_464176424"
                     );
                     break;
-                case '{"command":"mission"}':
+                case 'mission':
                     $this->sendMessage($user_id,
                         "Миссия колледжа: \n".
                         "Подготовка специалистов, обладающих профессиональными компетенциями, отвечающих современным требованиям рынка труда, \n".
                         "готовых к непрерывному росту, социальной и профессиональной мобильности, обладающих высокими духовно-нравственными качествами.\n\n".
 
-                        "6 - Вернуться в текстовый режим"
+                        "* - Вернуться в текстовый режим"
                     );
                     break;
-                case '{"command":"conducting"}':
+                case 'conducting':
                     $this->sendMessage($user_id,
                         "Видение колледжа: \n".
                         "Сохраняя традиции и внедряя инновации, колледж будет являться гарантом качественного образования, \n".
                         "обеспечивающего возможность карьерного роста и достойного положения в обществе\n\n".
 
-                        "6 - Вернуться в текстовый режим"
+                        "* - Вернуться в текстовый режим"
                     );
                     break;
-                case '{"command":"today"}':
+                case 'weather':
+                    $this->sendMessage($user_id, $controller->getWeather().
+                        "\n\n* - Вернуться в текстовый режим");
+                    break;
+                case 'today':
                     if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
                         $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
                         $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, true));
@@ -224,7 +232,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     $date = new \DateTime("now");
                     $this->sendMessage($user_id, Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
                     break;
-                case '{"command":"tomorrow"}':
+                case 'tomorrow':
                     if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
                         $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
                         $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, true));
@@ -236,7 +244,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     $date->modify('+1 day');
                     $this->sendMessage($user_id, Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
                     break;
-                case '{"command":"by_date"}':
+                case 'by_date':
                     if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
                         $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
                         $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, true));
@@ -246,11 +254,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     $controller->setWindow($user_id, Schedule::SCHEDULE_DATE);
                     $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_DATE, true));
                     break;
-                case '{"command":"current_date"}':
-                    $this->sendMessage($user_id,
-                        "Сегодня ".date("Y-m-d")."\n");
-                    break;
-                case '{"command":"change_group"}':
+                case 'change_group':
                     $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
                     /*
                     $this->sendMessage($user_id, "Укажите группу. Например, ".Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)."\n".
@@ -258,10 +262,14 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     */
                     $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, true));
                     break;
-                case '{"command":"hide_keyboard"}':
+                case 'hide_keyboard':
                     $controller->setKeyboardEnabled($user_id, false);
                     $controller->setWindow($user_id, Schedule::MAIN);
                     $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN));
+                    break;
+                default:
+                    $controller->setWindow($user_id, Schedule::MAIN);
+                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $keyboard));
                     break;
             }
         }else{//если написал текстом
@@ -273,7 +281,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                      * 3 - Штампы
                      * 4 - Миссия колледжа
                      * 5 - Видение колледжа
-                     * 6 - Показать клавиатуру клавиатуру
+                     * * - Показать клавиатуру клавиатуру
                      */
                     switch ($text){
                         case "1":
@@ -301,8 +309,8 @@ class ServerHandler extends VKCallbackApiServerHandler {
                                 "4. 13.40 – 15.10 | 10\n".
                                 "5. 15.20 – 16.50 | 10\n".
                                 "6. 17.00 – 18.30 | 20\n".
-                                "7. 18.50 – 20.20 | 10\n\n".
-                                $controller->getWindowText(Schedule::MAIN),  '');
+                                "7. 18.50 – 20.20 | 10\n",  '');
+                            $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN));
                             break;
                         case "3":
                             $this->sendMessage($user_id,
@@ -314,20 +322,24 @@ class ServerHandler extends VKCallbackApiServerHandler {
                             $this->sendMessage($user_id,
                                 "Миссия колледжа: \n".
                                 "Подготовка специалистов, обладающих профессиональными компетенциями, отвечающих современным требованиям рынка труда, \n".
-                                "готовых к непрерывному росту, социальной и профессиональной мобильности, обладающих высокими духовно-нравственными качествами.\n\n".
-                                $controller->getWindowText(Schedule::MAIN));
+                                "готовых к непрерывному росту, социальной и профессиональной мобильности, обладающих высокими духовно-нравственными качествами.\n");
+                            $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN));
                             break;
                         case "5":
                             $this->sendMessage($user_id,
                                 "Видение колледжа: \n".
                                 "Сохраняя традиции и внедряя инновации, колледж будет являться гарантом качественного образования, \n".
-                                "обеспечивающего возможность карьерного роста и достойного положения в обществе\n\n".
-                                $controller->getWindowText(Schedule::MAIN));
+                                "обеспечивающего возможность карьерного роста и достойного положения в обществе");
+                            $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN));
                             break;
                         case "6":
+                            $this->sendMessage($user_id, $controller->getWeather());
+                            $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN));
+                            break;
+                        case "*":
                             if($keyboard = $controller->isKeyboardEnabled($user_id)){//Текстовый режим
                                 $controller->setKeyboardEnabled($user_id, false);
-                            }else{//Клвиатурный режим
+                            }else{//Клавиатурный режим
                                 $controller->setKeyboardEnabled($user_id, true);
                             }
                             $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, !$keyboard));

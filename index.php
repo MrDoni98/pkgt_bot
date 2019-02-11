@@ -4,7 +4,7 @@
  * ПКЖТ Бот
  * Разработал MrDoni98(vk.com/mrdoni98) специально для pkgt.kz
  * При поддержке Ethicist(vk.com/ethicist)
- * Версия: 4.2.2
+ * Версия: 4.3/0
  */
 
 include('simple_html_dom.php');
@@ -20,6 +20,7 @@ if(!is_file("config.json")){
         'token' => '',
         'api_version' => '',
         'group_id' => 123,
+        'weather_token' => '',
         'groups' => ["Б", "Э","ВЛ","Л","Т","ПО","СТС","Д","ДМ","ЭРУ","ПВ","МП","ОВ","ЭМЛ","В","ДСП","ОВМ","СГО","СДМ", "ПМ"],
         'mysql' => [
             'host' => '127.0.0.1',
@@ -37,6 +38,7 @@ define('GROUP_ID', $config->group_id);
 define('SECRET', $config->secret);
 define('CONFIRMATION_TOKEN', $config->confirmation_token);
 define('API_VERSION', $config->api_version);
+define('WEATHER_TOKEN', $config->weather_token);
 
 
 
