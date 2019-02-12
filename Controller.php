@@ -110,8 +110,7 @@ class Controller
                         "1 - Пары на сегодня \n".
                         "2 - Пары на завтра\n".
                         "3 - Пары на определённую дату\n".
-                        "4 - Вывести текущую дату\n".
-                        "5 - Сменить группу\n\n".
+                        "4 - Сменить группу\n\n".
 
                         "0 - Вернуться в главное меню";
                 }
@@ -165,6 +164,7 @@ class Controller
                     ]];
                 break;
             case Schedule::SCHEDULE_GROUP:
+                //todo: array_chunk(Schedule::$group)
                 return ['one_time'=> true,
                     'buttons' => [
                         [$this->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', ["command" => "back"])]
@@ -212,6 +212,7 @@ class Controller
     }
 
     public function getWeather(): string {
+        //todo: добавить смайлики и форматирование текста
         $url = 'http://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&lat=54.875278&lon=69.162781&appid='.WEATHER_TOKEN;
         if(file_exists("weather.json")){
             $weather = json_decode(file_get_contents('weather.json'), true);

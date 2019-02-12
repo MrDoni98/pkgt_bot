@@ -4,7 +4,7 @@
  * ПКЖТ Бот
  * Разработал MrDoni98(vk.com/mrdoni98) специально для pkgt.kz
  * При поддержке Ethicist(vk.com/ethicist)
- * Версия: 4.3/0
+ * Версия: 4.3.1
  */
 
 include('simple_html_dom.php');

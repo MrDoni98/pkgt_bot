@@ -354,8 +354,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                      * 1 - Пары на сегодня
                      * 2 - Пары на завтра
                      * 3 - Пары на определённую дату
-                     * 4 - Вывести текущую дату
-                     * 5 - Сменить группу
+                     * 4 - Сменить группу
                      * 0 - Вернуться в меню
                      */
                     switch ($text){
@@ -367,28 +366,21 @@ class ServerHandler extends VKCallbackApiServerHandler {
                             $group = $controller->getGroup($user_id);
                             $date = new \DateTime("now");
                             $this->sendMessage($user_id,
-                                Schedule::getSchedule($group, $date->format("Y-m-d"))."\n\n".
-                                str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE)));
+                                Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
+                                $this->sendMessage(str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE)));
                             break;
                         case "2":
                             $group = $controller->getGroup($user_id);
                             $date = new \DateTime("now");
                             $date->modify('+1 day');
-                            $this->sendMessage($user_id,
-                                Schedule::getSchedule($group, $date->format("Y-m-d"))."\n\n".
-                                str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE)));
+                            $this->sendMessage($user_id, Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
+                            $this->sendMessage($user_id, str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE)));
                             break;
                         case "3":
                             $controller->setWindow($user_id, Schedule::SCHEDULE_DATE);
                             $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_DATE));
                             break;
                         case "4":
-                            $group = $controller->getGroup($user_id);
-                            $this->sendMessage($user_id,
-                                "Сегодня ".date("Y-m-d")."\n\n".
-                                str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE)));
-                            break;
-                        case "5":
                             $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
                             $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP));
                             break;
