@@ -367,7 +367,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                             $date = new \DateTime("now");
                             $this->sendMessage($user_id,
                                 Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
-                                $this->sendMessage(str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE)));
+                                $this->sendMessage($user_id,str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE)));
                             break;
                         case "2":
                             $group = $controller->getGroup($user_id);
