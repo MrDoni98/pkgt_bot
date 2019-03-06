@@ -26,7 +26,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
     }
 
     public function messageNew(int $group_id, ?string $secret, array $object) {
-        echo 'ok';
+        //echo 'ok';
         $user_id = $object['from_id'];
         $peer_id = $object['peer_id'];
 
@@ -260,7 +260,61 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     $this->sendMessage($user_id, "Укажите группу. Например, ".Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)."\n".
                         "Я знаю группы: ".implode(", ", Schedule::$groups)."\n", '', $controller->getKeyboard(Schedule::SCHEDULE_GROUP));
                     */
-                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, true));
+
+                    if(!isset($payload['group'])){
+                        if(isset($payload['page'])){
+                            $page = (int) $payload['page'];
+                        }else{
+                            $page = 0;
+                        }
+                        $key_brd = ['one_time'=> false, 'buttons' => []];
+                        $groups = array_chunk(Schedule::$groups, 3);
+                        $page_count = ceil(count($groups)/4);
+                        if($page >= $page_count){
+                            $this->sendMessage($user_id, "Страица не найдена");//если вдруг нагрузку подменят
+                            return;
+                        }
+                        $test = array_slice($groups, $page*4, 4);
+                        foreach ($test as $lines){
+                            $buttons = [];
+                            foreach ($lines as $grp){
+                                $buttons[] = $controller->getButton($grp, 'default', ['command' => 'change_group', 'group' => $grp]);
+                            }
+                            $key_brd['buttons'][] = $buttons;
+                        }
+                        $swing = [];
+                        if ($page > 0){
+                            $swing[] = $controller->getButton('<<', 'primary', ['command' => 'change_group', 'page' => $page - 1]);
+                        }
+                        if(($page+1) < $page_count){
+                            $swing[] = $controller->getButton('>>', 'primary', ['command' => 'change_group', 'page' => $page + 1]);
+                        }
+                        $key_brd['buttons'][] = $swing;
+                        $key_brd['buttons'][] = [$controller->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', ["command" => "back"])];
+                        $this->sendMessage($user_id, "[".($page+1)."/".$page_count."] Выберите группу: \n\n0 - Вернуться в главное меню", '', $key_brd);
+                    }else{
+                        if(!isset($payload['grade'])){
+                            $key_brd = ['one_time'=> true, 'buttons' => []];
+                            for($i = 1; $i <= 4; ++$i){
+                                $lines = [];
+                                for ($k = 1; $k <= 3; ++$k){
+                                    $grade = $payload['group'].'-'.$i.$k;
+                                    $lines[] = $controller->getButton($grade, 'default', ['command' => 'change_group', 'group' => $payload['group'], 'grade' => $i.$k]);
+                                }
+                                $key_brd['buttons'][] = $lines;
+                            }
+                            $key_brd['buttons'][] = [$controller->getButton("\xF0\x9F\x94\x99Назад", 'primary', ['command' => 'change_group'])];
+                            $key_brd['buttons'][] = [$controller->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', ["command" => "back"])];
+                            $this->sendMessage($user_id, "Выберите группу: \n\n0 - Вернуться в главное меню", '', $key_brd);
+                        }else{
+                            $group = $payload['group'].'-'.$payload['grade'];
+                            if (Schedule::isValidGroup($group)){
+                                $controller->setGroup($user_id, $group);
+                                $controller->setWindow($user_id, Schedule::SCHEDULE);
+                                $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE, true)));
+                            }
+                        }
+                    }
                     break;
                 case 'hide_keyboard':
                     $controller->setKeyboardEnabled($user_id, false);
@@ -430,7 +484,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
      * @param string $message
      * @param string $attachment
      */
-    public function sendMessage($user_id, string $message = "", string $attachment = ""){
+    public function sendMessage($user_id, string $message = "", string $attachment = "", array $keyboard = []){
         $vk = new VKApiClient('5.80');
         $messages = $vk->messages();
         $controller = $this->controller;
@@ -441,7 +495,11 @@ class ServerHandler extends VKCallbackApiServerHandler {
         );
 
         if($this->controller->isKeyboardEnabled($user_id)){
-            $request_params['keyboard'] = json_encode($controller->getKeyboard($controller->getWindow($user_id)), JSON_UNESCAPED_UNICODE);
+            if(empty($keyboard)){
+                $request_params['keyboard'] = json_encode($controller->getKeyboard($controller->getWindow($user_id)), JSON_UNESCAPED_UNICODE);
+            }else{
+                $request_params['keyboard'] = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
+            }
         }else{
             $request_params['keyboard'] = json_encode(['one_time'=> true, 'buttons' => []], JSON_UNESCAPED_UNICODE);
         }
