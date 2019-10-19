@@ -26,19 +26,19 @@ class ServerHandler extends VKCallbackApiServerHandler {
     }
 
     public function messageNew(int $group_id, ?string $secret, array $object) {
-        //echo 'ok';
+        echo 'ok';
         $user_id = $object['from_id'];
         $peer_id = $object['peer_id'];
 
         if(in_array($user_id, [244448617, 284995241])){
 
-            //exit;
+           // exit;
         }
 
         $vk = new VKApiClient('5.80');
-        $messages = $vk->messages();
         $controller = $this->controller;
 
+        $messages = $vk->messages();
         $user_name = $vk->users()->get(ACCESS_TOKEN, [
             'user_ids' => $user_id
         ])[0]['first_name'];
@@ -49,6 +49,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
         }
 
         $text = $object['text'];//текст сообщения
+        $text = preg_replace("<^\[club128463549\|.*\][\s|]>", "", $text);//срезаем обращение
         if($peer_id !== $user_id){//если написали в беседе
             $msg = explode(" ", $text);
             $chat_id = $peer_id - 2000000000;
@@ -66,14 +67,15 @@ class ServerHandler extends VKCallbackApiServerHandler {
             if(substr($text, 0, 1) != '/'){
                 exit;
             }
+
             $appeal = "@id".$user_id."(".$user_name."), ";
             switch (mb_strtolower($msg[0])){
                 case "/штампы":
-                    $this->sendChatMessage($chat_id, $appeal."Штампы: ", "doc-128463549_464176572,doc-128463549_464176550,doc-128463549_464176459,doc-128463549_464176424");
+                    $this->sendMessage($peer_id, $appeal."Штампы: ", "doc-128463549_464176572,doc-128463549_464176550,doc-128463549_464176459,doc-128463549_464176424");
                     break;
                 case "/помощь":
                 case "/команды":
-                    $this->sendChatMessage($chat_id, $appeal."Доступные команды:\n".
+                    $this->sendMessage($peer_id, $appeal."Доступные команды:\n".
                         "● /помощь - выводит список всех команд\n".
                         "● /звонки - расписание звонков\n".
                         "● /штампы - пришлёт файлы со штампами\n".
@@ -88,10 +90,10 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "/".Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)." ".date("Y-m-d"));
                     break;
                 case "/погода":
-                    $this->sendChatMessage($chat_id, $appeal.$controller->getWeather());
+                    $this->sendMessage($peer_id, $appeal.$controller->getWeather());
                     break;
                 case "/звонки":
-                    $this->sendChatMessage($chat_id,$appeal."РАСПИСАНИЕ ЗВОНКОВ:\n".
+                    $this->sendMessage($peer_id,$appeal."РАСПИСАНИЕ ЗВОНКОВ:\n".
                         "1. 08.30 – 10.00 | 10\n".
                         "2. 10.10 – 11.40 | 30\n".
                         "3. 12.10 – 13.40 | 10\n".
@@ -110,6 +112,29 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     break;
                 default:
                     $msg[0] = str_replace('/', '', $msg[0]);
+                    if($msg[0] == "кнопки"){
+                        if(!isset($msg[1])){
+                            $this->sendMessage($peer_id, "Укажите группу");
+                            return;
+                        }
+                        if(!Schedule::isValidGroup($msg[1])){
+                            $this->sendMessage($peer_id, "Неверно указана группа!");
+                        }
+                        $this->sendMessage($peer_id, "Дождитесь пока администратор вам их выдаст :-)");
+                        $request_params = [
+                            "params[random_id]"=> time(),
+                            "params[chat_id]" => $chat_id,
+                            "params[message]" => "Кнопки добавлены в беседу.",
+                            "params[group_id]" => 128463549,
+                                "params[keyboard]" => "{\"one_time\": false,\"buttons\": [[{\"action\": {\"type\": \"text\",\"payload\": \"{\\\"button\\\": \\\"1\\\"}\",\"label\": \"/".$msg[1]."\"},\"color\": \"negative\"},{\"action\": {\"type\": \"text\",\"payload\": \"{\\\"button\\\": \\\"1\\\"}\",\"label\": \"/".$msg[1]." на завтра\"},\"color\": \"negative\"}]]}",
+                            "params[dont_parse_links]" => 0,
+                            "params[v]" => "5.90"
+                        ];
+                        $get_params = http_build_query($request_params);
+                        $this->sendMessage(244448617, "[".$chat_id." -> ".$msg[1]."]Запрос на добавление кнопок в беседу:\n".
+                            "https://vk.com/dev.php?method=messages.send&".$get_params);
+                        return;
+                    }
                     if(Schedule::isValidGroup($msg[0])){
                         if(isset($msg[1])){
                             if($msg[1] == "на" || $msg[1] == "в"){
@@ -117,23 +142,23 @@ class ServerHandler extends VKCallbackApiServerHandler {
                                     $string = $msg;
                                     unset($string[0], $string[1]);
                                     if (($date = Schedule::getDate(implode(" ", $string))) !== false) {
-                                        $this->sendChatMessage($chat_id, $appeal.Schedule::getSchedule($msg[0], $date));
+                                        $this->sendMessage($peer_id, $appeal.Schedule::getSchedule($msg[0], $date));
                                     }else{
-                                        $this->sendChatMessage($chat_id, $appeal."Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
+                                        $this->sendMessage($peer_id, $appeal."Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
                                     }
                                 }else{
-                                    $this->sendChatMessage($chat_id, $appeal."Пожалуйства укажите на какой день вам нужно узнать расписание занятий");
+                                    $this->sendMessage($peer_id, $appeal."Пожалуйства укажите на какой день вам нужно узнать расписание занятий");
                                     return;
                                 }
                             }else{
                                 if (($date = Schedule::getDate($msg[1]))) {
-                                    $this->sendChatMessage($chat_id, $appeal.Schedule::getSchedule($msg[0], $date));
+                                    $this->sendMessage($peer_id, $appeal.Schedule::getSchedule($msg[0], $date));
                                 }else{
-                                    $this->sendChatMessage($chat_id, $appeal."Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
+                                    $this->sendMessage($peer_id, $appeal."Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
                                 }
                             }
                         }else{
-                            $this->sendChatMessage($chat_id, $appeal.Schedule::getSchedule($msg[0], date("Y-m-d")));
+                            $this->sendMessage($peer_id, $appeal.Schedule::getSchedule($msg[0], date("Y-m-d")));
                         }
                     }
                     break;
@@ -178,7 +203,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "4. 13.50 – 15.20 | 10\n".
                         "5. 15.30 – 17.00 | 10\n".
                         "6. 17.20 – 18.50 | 20\n".
-                        "7. 19.00 – 20.30 | 10\n".
+                        "7. 19.00 – 20.30 \n".
                         "РАСПИСАНИЕ ЗВОНКОВ (СУББОТА)\n".
                         "1. 08.30 – 10.00 | 10\n".
                         "2. 10.10 – 11.40 | 10\n".
@@ -231,6 +256,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     $group = $controller->getGroup($user_id);
                     $date = new \DateTime("now");
                     $this->sendMessage($user_id, Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
+                    $this->sendMessage($user_id, str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE, true)));
                     break;
                 case 'tomorrow':
                     if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
@@ -243,6 +269,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     $date = new \DateTime("now");
                     $date->modify('+1 day');
                     $this->sendMessage($user_id, Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
+                    $this->sendMessage($user_id, str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE, true)));
                     break;
                 case 'by_date':
                     if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
@@ -256,11 +283,6 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     break;
                 case 'change_group':
                     $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
-                    /*
-                    $this->sendMessage($user_id, "Укажите группу. Например, ".Schedule::$groups[array_rand(Schedule::$groups)]."-".rand(1, 4).rand(1, 3)."\n".
-                        "Я знаю группы: ".implode(", ", Schedule::$groups)."\n", '', $controller->getKeyboard(Schedule::SCHEDULE_GROUP));
-                    */
-
                     if(!isset($payload['group'])){
                         if(isset($payload['page'])){
                             $page = (int) $payload['page'];
@@ -284,10 +306,10 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         }
                         $swing = [];
                         if ($page > 0){
-                            $swing[] = $controller->getButton('<<', 'primary', ['command' => 'change_group', 'page' => $page - 1]);
+                            $swing[] = $controller->getButton("\xE2\x8F\xAA", 'primary', ['command' => 'change_group', 'page' => $page - 1]);//next
                         }
                         if(($page+1) < $page_count){
-                            $swing[] = $controller->getButton('>>', 'primary', ['command' => 'change_group', 'page' => $page + 1]);
+                            $swing[] = $controller->getButton("\xE2\x8F\xA9", 'primary', ['command' => 'change_group', 'page' => $page + 1]);//prevision
                         }
                         $key_brd['buttons'][] = $swing;
                         $key_brd['buttons'][] = [$controller->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', ["command" => "back"])];
@@ -483,16 +505,22 @@ class ServerHandler extends VKCallbackApiServerHandler {
      * @param $user_id
      * @param string $message
      * @param string $attachment
+     * @param array $keyboard
      */
     public function sendMessage($user_id, string $message = "", string $attachment = "", array $keyboard = []){
-        $vk = new VKApiClient('5.80');
+        $vk = new VKApiClient('5.95');
         $messages = $vk->messages();
         $controller = $this->controller;
 
         $request_params = array(
             'message' => $message,
-            'peer_id' => $user_id
+            'peer_id' => $user_id,
+            'random_id' => time()
         );
+        if($user_id > 2000000000){
+            unset($request_params["peer_id"]);
+            $request_params["chat_id"] = $user_id - 2000000000;
+        }
 
         if($this->controller->isKeyboardEnabled($user_id)){
             if(empty($keyboard)){
@@ -501,24 +529,8 @@ class ServerHandler extends VKCallbackApiServerHandler {
                 $request_params['keyboard'] = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
             }
         }else{
-            $request_params['keyboard'] = json_encode(['one_time'=> true, 'buttons' => []], JSON_UNESCAPED_UNICODE);
+            $request_params['keyboard'] = json_encode(['one_time'=> true, 'buttons' => []], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         }
-
-        if($attachment !== ""){
-            $request_params['attachment'] = $attachment;
-        }
-
-        $messages->send(ACCESS_TOKEN, $request_params);
-    }
-
-    public function sendChatMessage($chat_id, string $message = "", string $attachment = ""){
-        $vk = new VKApiClient('5.80');
-        $messages = $vk->messages();
-
-        $request_params = array(
-            'message' => $message,
-            'chat_id' => $chat_id
-        );
 
         if($attachment !== ""){
             $request_params['attachment'] = $attachment;

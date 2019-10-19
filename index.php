@@ -4,7 +4,7 @@
  * ПКЖТ Бот
  * Разработал MrDoni98(vk.com/mrdoni98) специально для pkgt.kz
  * При поддержке Ethicist(vk.com/ethicist)
- * Версия: 4.4.0
+ * Версия: 4.4.1
  */
 
 include('simple_html_dom.php');
@@ -43,6 +43,7 @@ define('WEATHER_TOKEN', $config->weather_token);
 
 
 //подключаемся к бд
+
 try {
     $db = new \mysqli($config->host, $config->username, $config->passwd, $config->dbname, $config->port);
     $db->set_charset("utf8");
@@ -67,9 +68,8 @@ if(empty($data)){
     echo 'упс';
     exit;
 }
-echo 'ok';
 try{
     $handler->parse($data);
 }catch (Exception $e){
-    file_put_contents('error.txt', $e->getMessage()."\n".$e->getTraceAsString());
+    file_put_contents('error.txt', date("Y-m-d H:i:s ").$e->getMessage()."\n".$e->getTraceAsString());
 }

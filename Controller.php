@@ -138,22 +138,22 @@ class Controller
             case Schedule::MAIN:
                 return ['one_time'=> false,
                     'buttons' => [
-                        [$this->getButton("\xF0\x9F\x93\x96Пары", 'primary', ["command" => "schedule"])],
-                        [$this->getButton("\xE2\x8F\xB0Звонки", 'default', ["command" => "calls"]),
+                        [$this->getButton("\xF0\x9F\x93\x9AРасписание", 'primary', ["command" => "schedule"])],
+                        [$this->getButton("\xF0\x9F\x95\x92Звонки", 'default', ["command" => "calls"]),
                             $this->getButton("\xE2\x9B\x85Погода", 'default',["command" => "weather"]),
-                            $this->getButton("\xF0\x9F\x93\x84Штампы", 'default', ["command" => "stamps"])],
-                        [$this->getButton("\xF0\x9F\x92\xA1Миссия", 'default', ["command" => "mission"]),
-                            $this->getButton("\xF0\x9F\x92\xA5Видение", 'default', ["command" => "conducting"])],
+                            $this->getButton("\xF0\x9F\x93\x90Штампы", 'default', ["command" => "stamps"])],
+                        [$this->getButton("\xF0\x9F\x9B\xA1Миссия", 'default', ["command" => "mission"]),
+                            $this->getButton("\xF0\x9F\x8F\x86Видение", 'default', ["command" => "conducting"])],
                         [$this->getButton("\xF0\x9F\x93\xB4Текстовый режим", 'negative', ["command" => "hide_keyboard"])]
                     ]];
                 break;
             case Schedule::SCHEDULE:
                 return ['one_time'=> false,
                     'buttons' => [
-                        [$this->getButton("\xF0\x9F\x95\x92Сегодня", 'default', ["command" => "today"]),
-                            $this->getButton("\xF0\x9F\x95\x93Завтра", 'default', ["command" => "tomorrow"])],
+                        [$this->getButton("\xE2\x9C\x85Сегодня", 'default', ["command" => "today"]),
+                            $this->getButton("\xE2\x98\x91Завтра", 'default', ["command" => "tomorrow"])],
                         [$this->getButton("\xF0\x9F\x93\x85По дате", 'default', ["command" => "by_date"])],
-                        [$this->getButton("\xE2\x9C\x8FСменить группу", 'primary', ["command" => "change_group"])],
+                        [$this->getButton("\xE2\x9C\x92Сменить группу", 'primary', ["command" => "change_group"])],
                         [$this->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', ["command" => "back"])]
                     ]];
                 break;

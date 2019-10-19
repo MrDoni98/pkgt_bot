@@ -137,6 +137,7 @@ class Schedule
                 $answer = "Расписание ".$group." на ".$date.". ".PHP_EOL.PHP_EOL;
                 $answer .= implode(PHP_EOL, $ans);
             }
+            $html->clear();
 
             $request_params = array(
                 'url' => "http://pkgt.kz/learner/index_m.php?ng=".urlencode($group)."&dat=".$date."&sel=Найти",
