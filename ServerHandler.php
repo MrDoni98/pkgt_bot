@@ -144,7 +144,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                                     if (($date = Schedule::getDate(implode(" ", $string))) !== false) {
                                         $this->sendMessage($peer_id, $appeal.Schedule::getSchedule($msg[0], $date));
                                     }else{
-                                        $this->sendMessage($peer_id, $appeal."Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
+                                        $this->sendMessage($peer_id, $appeal."Извините я вас не понял...\n Доступные команды можно узнать написав мне: \"помощь\"");
                                     }
                                 }else{
                                     $this->sendMessage($peer_id, $appeal."Пожалуйства укажите на какой день вам нужно узнать расписание занятий");
@@ -154,7 +154,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                                 if (($date = Schedule::getDate($msg[1]))) {
                                     $this->sendMessage($peer_id, $appeal.Schedule::getSchedule($msg[0], $date));
                                 }else{
-                                    $this->sendMessage($peer_id, $appeal."Извините я вас не понял...\n Доступные команы можно узнать написав мне: \"помощь\"");
+                                    $this->sendMessage($peer_id, $appeal."Извините я вас не понял...\n Доступные команды можно узнать написав мне: \"помощь\"");
                                 }
                             }
                         }else{
