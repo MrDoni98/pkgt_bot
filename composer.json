@@ -5,6 +5,6 @@
   "homepage": "https://github.com/MrDoni98/pkgt_bot",
   "license": "GPL-3.0-or-later",
   "require": {
-    "vkcom/vk-php-sdk": "^5.80"
+    "vkcom/vk-php-sdk": "^5.101.0"
   }
 }

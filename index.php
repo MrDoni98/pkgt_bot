@@ -4,7 +4,7 @@
  * ПКЖТ Бот
  * Разработал MrDoni98(vk.com/mrdoni98) специально для pkgt.kz
  * При поддержке Ethicist(vk.com/ethicist)
- * Версия: 4.4.1
+ * Версия: 4.5.0
  */
 
 include('simple_html_dom.php');
@@ -47,10 +47,11 @@ define('WEATHER_TOKEN', $config->weather_token);
 try {
     $db = new \mysqli($config->host, $config->username, $config->passwd, $config->dbname, $config->port);
     $db->set_charset("utf8");
-    $db->query("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY NOT NULL, `group` TEXT, `window` INT(1), `keyboard` VARCHAR(0));");
+    $db->query("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY NOT NULL, `group` TEXT, `window` INT(1), `keyboard` VARCHAR(1));");
     //$db->exec('PRAGMA journal_mode=WAL;');
 } catch (\Exception $e) {
     echo($e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
+	file_put_contents('error.txt', date("Y-m-d H:i:s ").$e->getMessage()."\n".$e->getTraceAsString());
     exit;
 }
 
