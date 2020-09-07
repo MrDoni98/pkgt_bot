@@ -334,10 +334,10 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         }
                         $swing = [];
                         if ($page > 0){
-                            $swing[] = $controller->getButton("\xE2\x8F\xAAДалее", 'primary', ['command' => 'change_group', 'page' => $page - 1]);//next
+                            $swing[] = $controller->getButton("\xE2\x8F\xAAНазад", 'primary', ['command' => 'change_group', 'page' => $page - 1]);//next
                         }
                         if(($page+1) < $page_count){
-                            $swing[] = $controller->getButton("\xE2\x8F\xA9Назад", 'primary', ['command' => 'change_group', 'page' => $page + 1]);//prevision
+                            $swing[] = $controller->getButton("\xE2\x8F\xA9Далее", 'primary', ['command' => 'change_group', 'page' => $page + 1]);//prevision
                         }
                         $key_brd['buttons'][] = $swing;
                         $key_brd['buttons'][] = [$controller->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', ["command" => "back"])];
