@@ -44,14 +44,16 @@ class ServerHandler extends VKCallbackApiServerHandler {
         $controller = $this->controller;
 
         $messages = $vk->messages();
-        $user_name = array_shift($vk->users()->get(ACCESS_TOKEN, [
+        $user = $vk->users()->get(ACCESS_TOKEN, [
             'user_ids' => $user_id
-        ]))['first_name'];
+        ]);
+        $user_name = array_shift($user)['first_name'];
 
+        /*
         $status = json_decode(file_get_contents("https://api.vk.com/method/groups.getOnlineStatus?group_id=128463549&access_token=".ACCESS_TOKEN."&v=".API_VERSION.""));
         if($status->response->status != "online"){
             json_decode(file_get_contents("https://api.vk.com/method/groups.enableOnline?group_id=128463549&access_token=".ACCESS_TOKEN."&v=".API_VERSION.""));
-        }
+        }*/
 
         $text = $object['text'];//текст сообщения
         $text = preg_replace("<^\[club128463549\|.*\][\s|]>", "", $text);//срезаем обращение
@@ -85,6 +87,8 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "● /помощь - выводит список всех команд\n".
                         "● /звонки - расписание звонков\n".
                         "● /штампы - пришлёт файлы со штампами\n".
+						"● /кнопки <группа> - добавить кнопки для быстрого вывова расписания группы\n".
+						"● /кнопки убрать - убрать кнопки быстрого вывода расписания\n".
                         "● /погода\n".
                         "● /<группа> - покажет расписание на текущую дату\n".
                         "● /<группа> <дата в формате год-месяц-число>\n".
@@ -118,27 +122,36 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     break;
                 default:
                     $msg[0] = str_replace('/', '', $msg[0]);
-                    if($msg[0] == "кнопки"){//надо найти способ отправки клавиатуры в беседу без танцев с бубном
+
+                    if($msg[0] == "кнопки"){
                         if(!isset($msg[1])){
                             $this->sendMessage($peer_id, "Укажите группу");
                             return;
                         }
+                        if($msg[1] == "убрать"){
+							$request_params = array(
+								'message' => "Кнопки убраны",
+								'peer_id' => $peer_id,
+								'random_id' => time(),
+								'keyboard' => json_encode(['one_time'=> true, 'buttons' => []], JSON_UNESCAPED_UNICODE)
+							);
+							$messages->send(ACCESS_TOKEN, $request_params);
+                            return;
+                        }
                         if(!Schedule::isValidGroup($msg[1])){
                             $this->sendMessage($peer_id, "Неверно указана группа!");
+                            return;
                         }
-                        $this->sendMessage($peer_id, "Дождитесь пока администратор вам их выдаст :-)");
-                        $request_params = [
-                            "params[random_id]"=> time(),
-                            "params[chat_id]" => $chat_id,
-                            "params[message]" => "Кнопки добавлены в беседу.",
-                            "params[group_id]" => 128463549,
-                                "params[keyboard]" => "{\"one_time\": false,\"buttons\": [[{\"action\": {\"type\": \"text\",\"payload\": \"{\\\"button\\\": \\\"1\\\"}\",\"label\": \"/".$msg[1]."\"},\"color\": \"negative\"},{\"action\": {\"type\": \"text\",\"payload\": \"{\\\"button\\\": \\\"1\\\"}\",\"label\": \"/".$msg[1]." на завтра\"},\"color\": \"negative\"}]]}",
-                            "params[dont_parse_links]" => 0,
-                            "params[v]" => "5.90"
-                        ];
-                        $get_params = http_build_query($request_params);
-                        $this->sendMessage(244448617, "[".$chat_id." -> ".$msg[1]."]Запрос на добавление кнопок в беседу:\n".
-                            "https://vk.com/dev.php?method=messages.send&".$get_params);
+						$request_params = array(
+							'message' => "Добавлены кнопки для быстрого доступа к расписанию группы ".$msg[1]."\nЧтобы убрать кнопки введите: /кнопки убрать",
+							'peer_id' => $peer_id,
+							'random_id' => time(),
+							'keyboard' => json_encode(['one_time'=> false,
+								'buttons' => [
+									[$controller->getButton("/".$msg[1], 'default', ["/".$msg[1]]), $controller->getButton("/".$msg[1]." на завтра", 'default', ["/".$msg[1]." на завтра"])]
+								]], JSON_UNESCAPED_UNICODE)
+						);
+						$messages->send(ACCESS_TOKEN, $request_params);
                         return;
                     }
                     if(Schedule::isValidGroup($msg[0])){
@@ -179,8 +192,9 @@ class ServerHandler extends VKCallbackApiServerHandler {
         }
 
         $keyboard = $controller->isKeyboardEnabled($user_id);
-        if(!$client_info["keyboard"]){
+        if(isset($client_info["keyboard"]) and !$client_info["keyboard"]){
             $controller->setKeyboardEnabled($user_id, false);
+            $keyboard = false;
         }
 
         if(isset($object['payload'])){//если пользователь нажал на кнопку
@@ -188,7 +202,12 @@ class ServerHandler extends VKCallbackApiServerHandler {
             switch ($payload['command']?? ''){
                 case 'start':
                     $controller->setWindow($user_id, Schedule::MAIN);
-                    $controller->setKeyboardEnabled($user_id, true);
+					if(isset($client_info["keyboard"]) and !$client_info["keyboard"]){
+						$keyboard = false;
+					}else{
+						$keyboard = true;
+					}
+                    $controller->setKeyboardEnabled($user_id, $keyboard);
                     $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $keyboard));
                     break;
                 case 'back':
@@ -198,10 +217,10 @@ class ServerHandler extends VKCallbackApiServerHandler {
                 case 'schedule':
                     if(!is_null($group = $controller->getGroup($user_id))){//если пользователь установил группу
                         $controller->setWindow($user_id, Schedule::SCHEDULE);
-                        $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE, true)));
+                        $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE, $keyboard)));
                     }else{//иначе просим установить
                         $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
-                        $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE_GROUP, true)));
+                        $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE_GROUP, $keyboard)));
                     }
                     break;
                 case 'calls':
@@ -258,19 +277,19 @@ class ServerHandler extends VKCallbackApiServerHandler {
                 case 'today':
                     if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
                         $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
-                        $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, true));
+                        $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, $keyboard));
                         return;
                     }
 
                     $group = $controller->getGroup($user_id);
                     $date = new \DateTime("now");
                     $this->sendMessage($user_id, Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
-                    $this->sendMessage($user_id, str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE, true)));
+                    $this->sendMessage($user_id, str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE, $keyboard)));
                     break;
                 case 'tomorrow':
                     if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
                         $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
-                        $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, true));
+                        $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, $keyboard));
                         return;
                     }
 
@@ -278,17 +297,17 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     $date = new \DateTime("now");
                     $date->modify('+1 day');
                     $this->sendMessage($user_id, Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
-                    $this->sendMessage($user_id, str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE, true)));
+                    $this->sendMessage($user_id, str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE, $keyboard)));
                     break;
                 case 'by_date':
                     if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
                         $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
-                        $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, true));
+                        $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, $keyboard));
                         return;
                     }
 
                     $controller->setWindow($user_id, Schedule::SCHEDULE_DATE);
-                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_DATE, true));
+                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_DATE, $keyboard));
                     break;
                 case 'change_group':
                     $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
@@ -315,14 +334,20 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         }
                         $swing = [];
                         if ($page > 0){
-                            $swing[] = $controller->getButton("\xE2\x8F\xAA", 'primary', ['command' => 'change_group', 'page' => $page - 1]);//next
+                            $swing[] = $controller->getButton("\xE2\x8F\xAAДалее", 'primary', ['command' => 'change_group', 'page' => $page - 1]);//next
                         }
                         if(($page+1) < $page_count){
-                            $swing[] = $controller->getButton("\xE2\x8F\xA9", 'primary', ['command' => 'change_group', 'page' => $page + 1]);//prevision
+                            $swing[] = $controller->getButton("\xE2\x8F\xA9Назад", 'primary', ['command' => 'change_group', 'page' => $page + 1]);//prevision
                         }
                         $key_brd['buttons'][] = $swing;
                         $key_brd['buttons'][] = [$controller->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', ["command" => "back"])];
-                        $this->sendMessage($user_id, "[".($page+1)."/".$page_count."] Выберите группу: \n\n0 - Вернуться в главное меню", '', $key_brd);
+						$request_params = array(
+							'message' => "[".($page+1)."/".$page_count."] Выберите группу: \n\n0 - Вернуться в главное меню",
+							'peer_id' => $user_id,
+							'random_id' => time(),
+							'keyboard' => json_encode($key_brd, JSON_UNESCAPED_UNICODE)
+						);
+						$messages->send(ACCESS_TOKEN, $request_params);
                     }else{
                         if(!isset($payload['grade'])){
                             $key_brd = ['one_time'=> true, 'buttons' => []];
@@ -336,13 +361,19 @@ class ServerHandler extends VKCallbackApiServerHandler {
                             }
                             $key_brd['buttons'][] = [$controller->getButton("\xF0\x9F\x94\x99Назад", 'primary', ['command' => 'change_group'])];
                             $key_brd['buttons'][] = [$controller->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', ["command" => "back"])];
-                            $this->sendMessage($user_id, "Выберите группу: \n\n0 - Вернуться в главное меню", '', $key_brd);
+							$request_params = array(
+								'message' => "Выберите группу: \n\n0 - Вернуться в главное меню",
+								'peer_id' => $user_id,
+								'random_id' => time(),
+								'keyboard' => json_encode($key_brd, JSON_UNESCAPED_UNICODE)
+							);
+							$messages->send(ACCESS_TOKEN, $request_params);
                         }else{
                             $group = $payload['group'].'-'.$payload['grade'];
                             if (Schedule::isValidGroup($group)){
                                 $controller->setGroup($user_id, $group);
                                 $controller->setWindow($user_id, Schedule::SCHEDULE);
-                                $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE, true)));
+                                $this->sendMessage($user_id, str_replace("{group}", $controller->getGroup($user_id), $controller->getWindowText(Schedule::SCHEDULE, $keyboard)));
                             }
                         }
                     }
@@ -350,7 +381,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                 case 'hide_keyboard':
                     $controller->setKeyboardEnabled($user_id, false);
                     $controller->setWindow($user_id, Schedule::MAIN);
-                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN));
+                    $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN), "");
                     break;
                 default:
                     $controller->setWindow($user_id, Schedule::MAIN);
@@ -424,10 +455,12 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         case "*":
                             if($keyboard = $controller->isKeyboardEnabled($user_id)){//Текстовый режим
                                 $controller->setKeyboardEnabled($user_id, false);
+                                $keyboard = false;
                             }else{//Клавиатурный режим
                                 $controller->setKeyboardEnabled($user_id, true);
+                                 $keyboard = true;
                             }
-                            $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, !$keyboard));
+                            $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $keyboard));
                             break;
                         default:
                             $this->sendMessage($user_id, $controller->getWindowText(Schedule::MAIN, $keyboard));
@@ -481,7 +514,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                     }elseif(($d = date_create_from_format("Y-m-d", $text))){//Если сторока является датой в формате Y-m-d
                         $date = date_format($d, 'Y-m-d');
                         $group = $controller->getGroup($user_id);
-                        $controller->setWindow($user_id, Schedule::SCHEDULE, $keyboard);
+                        $controller->setWindow($user_id, Schedule::SCHEDULE);
                         $this->sendMessage($user_id,
                             Schedule::getSchedule($group, $date)."\n\n".
                             str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE, $keyboard)));
@@ -514,9 +547,8 @@ class ServerHandler extends VKCallbackApiServerHandler {
      * @param $user_id
      * @param string $message
      * @param string $attachment
-     * @param array $keyboard
      */
-    public function sendMessage($user_id, string $message = "", string $attachment = "", array $keyboard = []){
+    public function sendMessage($user_id, string $message = "", string $attachment = ""){
         $vk = new VKApiClient(API_VERSION);
         $messages = $vk->messages();
         $controller = $this->controller;
@@ -533,14 +565,12 @@ class ServerHandler extends VKCallbackApiServerHandler {
             $request_params["user_id"] = $user_id;
         }
 
-        if($this->controller->isKeyboardEnabled($user_id)){
-            if(empty($keyboard)){
-                $request_params['keyboard'] = json_encode($controller->getKeyboard($controller->getWindow($user_id)), JSON_UNESCAPED_UNICODE);
-            }else{
-                $request_params['keyboard'] = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
-            }
-        }else{
-            $request_params['keyboard'] = json_encode(['one_time'=> true, 'buttons' => []], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        if(empty($keyboard) and $user_id < 2000000000){
+			if($this->controller->isKeyboardEnabled($user_id)){
+				$request_params['keyboard'] = json_encode($controller->getKeyboard($controller->getWindow($user_id)), JSON_UNESCAPED_UNICODE);
+			}else{
+				$request_params['keyboard'] = '{"buttons":[],"one_time":true}';//спрятать клавиатуру
+			}
         }
 
         if($attachment !== ""){
