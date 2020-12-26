@@ -4,11 +4,10 @@
  * ПКЖТ Бот
  * Разработал MrDoni98(vk.com/mrdoni98) специально для pkgt.kz
  * При поддержке Ethicist(vk.com/ethicist)
- * Версия: 4.5.1
+ * Версия: 4.6.0
  */
 
-include('simple_html_dom.php');
-set_time_limit(0);
+set_time_limit(10);
 date_default_timezone_set('Asia/Almaty');
 header("Content-Type text/html; charset=utf-8");
 define('ROOT', dirname(__FILE__) . DIRECTORY_SEPARATOR);

@@ -275,6 +275,7 @@ class ServerHandler extends VKCallbackApiServerHandler {
                         "\n\n* - Вернуться в текстовый режим");
                     break;
                 case 'today':
+				case 'tomorrow':
                     if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
                         $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
                         $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, $keyboard));
@@ -283,20 +284,18 @@ class ServerHandler extends VKCallbackApiServerHandler {
 
                     $group = $controller->getGroup($user_id);
                     $date = new \DateTime("now");
-                    $this->sendMessage($user_id, Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
-                    $this->sendMessage($user_id, str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE, $keyboard)));
-                    break;
-                case 'tomorrow':
-                    if(is_null($group = $controller->getGroup($user_id))){//если пользователь не установил группу
-                        $controller->setWindow($user_id, Schedule::SCHEDULE_GROUP);
-                        $this->sendMessage($user_id, $controller->getWindowText(Schedule::SCHEDULE_GROUP, $keyboard));
-                        return;
-                    }
-
-                    $group = $controller->getGroup($user_id);
-                    $date = new \DateTime("now");
-                    $date->modify('+1 day');
-                    $this->sendMessage($user_id, Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
+                    $day = 'Сегодня';
+                    if($payload['command'] == 'tomorrow'){
+						$date->modify('+1 day');
+						$day = 'Завтра';
+					}
+                    if($date->format('N') == 7){//если воскресенье, смотрим на понедельник
+						$date->modify('+1 day');
+						$day = $day . " воскресенье, смотрю расписание на понедельник: \n";
+					}else{
+                    	$day = '';
+					}
+                    $this->sendMessage($user_id, $day. Schedule::getSchedule($group, $date->format("Y-m-d"))."\n");
                     $this->sendMessage($user_id, str_replace("{group}", $group, $controller->getWindowText(Schedule::SCHEDULE, $keyboard)));
                     break;
                 case 'by_date':
