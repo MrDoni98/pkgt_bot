@@ -60,16 +60,12 @@ class ServerHandler extends VKCallbackApiServerHandler {
 
         if($peer_id !== $user_id){//если написали в беседе
             $msg = explode(" ", $text);
-            $chat_id = $peer_id - 2000000000;
+            //$chat_id = $peer_id - 2000000000;
+
             if(isset($object['action'])){
-                $action = $object['action'];
-                if($action->type == "chat_invite_user" && $action->member_id == -128463549){
-                    $messages->send(ACCESS_TOKEN, [
-                        "peer_id" => $peer_id,
-                        "chat_id" => $chat_id,
-                        "message" => "Здравствуйте! Я неофициальный бот колледжа ПКЖТ.\n".
-                            "Для просмотра доступных команд напишите: /помощь"
-                    ]);
+                if($object['action']['type'] == "chat_invite_user" && $object['action']['member_id'] == -128463549){
+					$this->sendMessage($peer_id, "Здравствуйте! Я неофициальный бот колледжа ПКЖТ.\n".
+						"Для просмотра доступных команд напишите: /помощь");
                 }
             }
             if(substr($text, 0, 1) != '/'){
