@@ -4,3 +4,6 @@ order allow,deny
 deny from all
 </files>
 RedirectMatch 404 config.json
+<FilesMatch "config\.json">
+  Deny from all
+</FilesMatch>

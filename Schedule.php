@@ -15,7 +15,7 @@ class Schedule
     const SCHEDULE = 1;
     const SCHEDULE_DATE = 2;
     const SCHEDULE_GROUP = 3;
-    const WEATHER = 4;
+    const FEEDBACK = 4;
 
     public function __construct($groups)
     {

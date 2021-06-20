@@ -38,6 +38,8 @@ define('SECRET', $config->secret);
 define('CONFIRMATION_TOKEN', $config->confirmation_token);
 define('API_VERSION', $config->api_version);
 define('WEATHER_TOKEN', $config->weather_token);
+define('OWNER_ID', $config->owner_id);
+define('ADMINS_ID', $config->admins_id);
 
 
 
@@ -62,7 +64,7 @@ spl_autoload_register(function ($className){
 include_once(ROOT."vendor/autoload.php");
 
 new Schedule($config->groups);
-$handler = new ServerHandler(new Controller($db));
+$handler = new ServerHandler($db);
 $data = json_decode(file_get_contents('php://input'));
 if(empty($data)){
     echo 'упс';

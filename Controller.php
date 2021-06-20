@@ -11,28 +11,51 @@ class Controller
 {
     /** @var  \mysqli */
     private static $db;
+    private $is_first = false;
+    private $user_id = 0;
+    private $window = Schedule::MAIN;
+    private $group = null;
+    private $keyboard = false;
 
-    public function __construct(\mysqli $db)
+    public function __construct(ServerHandler $handler, int $user_id, bool $keyboard = false)
     {
-        self::$db = $db;
+        self::$db = $handler->db;
+        $this->user_id = $user_id;
+		$result = self::$db->query("SELECT * FROM `users` WHERE id = '".$user_id."'");
+		if($result){
+			$assoc = $result->fetch_assoc();
+			if(is_null($assoc)){//пользователь не зарегестрирован
+				self::$db->query("INSERT INTO users (`id`, `window`, `group`, `keyboard`) VALUES (".$user_id.", ".Schedule::MAIN.", NULL, ".((int) $keyboard).");");
+				$this->is_first = true;
+				$this->keyboard = (bool) $keyboard;
+			}else{
+				if(!empty(($window = $assoc["window"]))){
+					$this->window = $window;
+				}
+				if(!empty(($enabled = $assoc['keyboard']))){
+					$this->keyboard = (bool) $enabled;
+				}
+				if(!empty(($group = $assoc['group']))){
+					$this->group = $group;
+				}
+				$result->free();
+			}
+		}
     }
 
-    public function getGroup($user_id){
-        $result = self::$db->query("SELECT * FROM `users` WHERE id = '".$user_id."';");
-        if($result){
-            if(!empty(($group = $result->fetch_assoc()["group"]))){
-                $result->free();
-                return $group;
-            }
-        }
-        return null;
+    public function isFirst():bool{
+    	return $this->is_first;
+	}
+
+    public function getGroup(){
+        return $this->group;
     }
 
     /**
      * @param $user_id
      * @param string $group
      */
-    public function setGroup($user_id, string $group){
+    public function setGroup(string $group){
         /*
         $stmt = self::$db->prepare("INSERT OR REPLACE INTO users ('id', 'group', 'window') VALUES (:user_id, :group, :window);");
         $stmt->bindValue(':user_id', (int)$user_id);
@@ -40,7 +63,8 @@ class Controller
         $stmt->bindValue(':window', $this->getWindow($user_id));
         $stmt->execute();
         */
-        self::$db->query("UPDATE `users` SET `group` = '".$group."' WHERE id = '".$user_id."';");
+        self::$db->query("UPDATE `users` SET `group` = '".$group."' WHERE id = '".$this->user_id."';");
+        $this->group = $group;
     }
 
 
@@ -48,28 +72,15 @@ class Controller
      * @param $user_id
      * @return int
      */
-    public function getWindow($user_id): int{
-        $result = self::$db->query("SELECT * FROM `users` WHERE id = '".$user_id."'");
-        if($result){
-            if(!empty(($window = $result->fetch_assoc()["window"]))){
-                $result->free();
-                return $window;
-            }else{//пользователь не зарегестрирован
-                $stmt = self::$db->query("INSERT INTO users (`id`, `window`, `group`, `keyboard`) VALUES (".$user_id.", 0, NULL, 0);");
-                //$this->setWindow($user_id, 0);
-                $result->free();
-                return 0;
-            }
-        }else{
-            return 0;
-        }
+    public function getWindow(): int{
+        return $this->window;
     }
 
     /**
      * @param $user_id
      * @param int $window
      */
-    public function setWindow($user_id, int $window){
+    public function setWindow(int $window){
         /*
         $stmt = self::$db->prepare("INSERT OR REPLACE INTO users ('id', 'window') VALUES (:user_id, :window);");
         $stmt->bindValue(':user_id', (int)$user_id);
@@ -77,12 +88,14 @@ class Controller
         $stmt->bindValue(':window', (int)$window);
         $stmt->execute();
         */
-        self::$db->query("UPDATE users SET `window` = '".$window."' WHERE id = '".$user_id."';");
+        self::$db->query("UPDATE users SET `window` = '".$window."' WHERE id = '".$this->user_id."';");
+        $this->window = $window;
     }
 
     public function getWindowText(int $window, bool $keyboard = false): string {
         $result = "";
         switch ($window){
+			default:
             case Schedule::MAIN:
                 if($keyboard){
                     $result = "Главное меню\n";
@@ -93,6 +106,7 @@ class Controller
                         "4 - Миссия колледжа\n".
                         "5 - Видение колледжа\n".
                         "6 - Погода\n\n".
+						//"7 - Обратная связь\n\n".
                         "* - Включить кнопки\n\n".
 
                         "Сайт колледжа: http://pkgt.kz";
@@ -123,6 +137,10 @@ class Controller
                     "Я знаю группы: ".implode(", ", Schedule::$groups)."\n\n".
                     "0 - Вернуться в главное меню";
                 break;
+			case Schedule::FEEDBACK:
+				$result = "Укажие сообщение которое хотите отправить создателю бота.\n\n".
+					'0 - Вернуться в главное меню';
+				break;
         }
         return $result;
     }
@@ -142,6 +160,7 @@ class Controller
                             $this->getButton("\xF0\x9F\x93\x90Штампы", 'default', ["command" => "stamps"])],
                         [$this->getButton("\xF0\x9F\x9B\xA1Миссия", 'default', ["command" => "mission"]),
                             $this->getButton("\xF0\x9F\x8F\x86Видение", 'default', ["command" => "conducting"])],
+						//[$this->getButton("\xF0\x9F\x93\xA2Обратная связь", 'positive', ["command" => "feedback"])],
                         [$this->getButton("\xF0\x9F\x93\xB4Текстовый режим", 'negative', ["command" => "hide_keyboard"])]
                     ]];
                 break;
@@ -162,12 +181,18 @@ class Controller
                     ]];
                 break;
             case Schedule::SCHEDULE_GROUP:
-                //todo: array_chunk(Schedule::$group)
                 return ['one_time'=> true,
                     'buttons' => [
+						[$this->getButton("\xE2\x9C\x92Выбрать из списка", 'primary', ["command" => "change_group"])],
                         [$this->getButton("\xF0\x9F\x94\x99Главное меню", 'negative', ["command" => "back"])]
                     ]];
                 break;
+			case Schedule::FEEDBACK:
+				return ['one_time'=> false,
+					'buttons' => [
+						[$this->getButton("\xF0\x9F\x94\x99Главное меню", 'primary', ["command" => "back"])]
+					]];
+				break;
             default:
                 return ['one_time'=> true,
                     'buttons' => []];
@@ -185,28 +210,13 @@ class Controller
         ];
     }
 
-    public function isKeyboardEnabled($user_id): bool{
-        $result = self::$db->query("SELECT * FROM `users` WHERE id = '".$user_id."'");
-        if($result){
-            if(!empty(($enabled = $result->fetch_assoc()['keyboard']))){
-                $result->free();
-                return (bool) $enabled;
-            }else{
-                $this->setKeyboardEnabled($user_id, false);
-                $result->free();
-                return false;
-            }
-        }else{
-            return false;
-        }
+    public function isKeyboardEnabled(): bool{
+        return $this->keyboard;
     }
 
-    public function setKeyboardEnabled($user_id, bool $enabled = true){
-        if($enabled){
-            self::$db->query("UPDATE users SET `keyboard` = 1 WHERE id = '".$user_id."';");
-        }else{
-            self::$db->query("UPDATE users SET `keyboard` = '0' WHERE id = '".$user_id."';");
-        }
+    public function setKeyboardEnabled(bool $enabled = true){
+        self::$db->query("UPDATE users SET `keyboard` = '".((int) $enabled)."' WHERE id = '".$this->user_id."';");
+        $this->keyboard = $enabled;
     }
 
     public function getWeather(): string {
